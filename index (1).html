@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trace My T-Shirt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Barlow:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+body{margin:0}
+/* Layout: one column journey. A sticky "garment tag" tracks the shirt's running totals; each stage shows supplier cards styled like sewn-in care labels; the ending is a newspaper front page and a report card. */
+:root{
+  --bg:#E7E7E7; --band:#DB0000; --band-ink:#ffffff; --card:#ffffff; --ink:#1a1a1a; --muted:#575351; --line:#d6d3d1;
+  --indigo:#DB0000; --indigo-ink:#ffffff; --indigo-soft:#fbe6e6;
+  --thread:#9b1c1c; --thread-soft:#f8e0e0; --good:#1f7a45; --good-soft:#dff2e7; --warn:#9a6200; --warn-soft:#fbf0d4;
+  --paper:#f7f6f2; --paper-ink:#1d1d1d;
+  --f-display:"Merriweather",Georgia,"Times New Roman",serif;
+  --f-body:"Barlow","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161616; --band:#9e0000; --band-ink:#ffffff; --card:#222121; --ink:#efecea; --muted:#b3aeab; --line:#3a3736;
+  --indigo:#ff4d4d; --indigo-ink:#1a0000; --indigo-soft:#3a1c1c;
+  --thread:#ff8f8f; --thread-soft:#3d1f1f; --good:#63d095; --good-soft:#15301f; --warn:#e9b64b; --warn-soft:#33280e;
+  --paper:#262624; --paper-ink:#eeeae0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161616; --band:#9e0000; --band-ink:#ffffff; --card:#222121; --ink:#efecea; --muted:#b3aeab; --line:#3a3736;
+  --indigo:#ff4d4d; --indigo-ink:#1a0000; --indigo-soft:#3a1c1c;
+  --thread:#ff8f8f; --thread-soft:#3d1f1f; --good:#63d095; --good-soft:#15301f; --warn:#e9b64b; --warn-soft:#33280e;
+  --paper:#262624; --paper-ink:#eeeae0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:linear-gradient(var(--band) 0,var(--band) 260px,var(--bg) 260px) no-repeat,var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--band-ink);flex-wrap:wrap}
+.brandbar img{height:56px;width:auto;max-width:100%;display:block}
+.brandbar span{font:600 .8rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:clamp(2.1rem,6.5vw,3.3rem);font-weight:900;letter-spacing:-.01em}
+h2{font-size:1.5rem;font-weight:900}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;color:var(--muted);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.btn{font:700 1rem var(--f-body);padding:10px 16px;border-radius:8px;border:2px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.go{background:var(--indigo);border-color:var(--indigo);color:var(--indigo-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.choose:focus-visible,.audit:focus-visible,input:focus-visible{outline:3px solid var(--thread);outline-offset:2px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:center}
+@media (max-width:700px){.hero{grid-template-columns:1fr}}
+.hero .text{display:flex;flex-direction:column;gap:12px}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.rules{grid-template-columns:1fr}}
+.rule{background:var(--indigo-soft);border-radius:8px;padding:12px;font-size:.94rem}
+.rule b{display:block;font-family:var(--f-display);font-size:1.05rem;margin-bottom:2px}
+.shirt svg{width:100%;max-width:300px;height:auto;display:block;margin:0 auto}
+
+/* route */
+.route{display:flex;gap:6px;flex-wrap:wrap}
+.route span{font:600 .78rem var(--f-mono);padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);color:var(--muted);white-space:nowrap}
+.route span.done{border-color:var(--indigo);color:var(--indigo)}
+.route span.now{background:var(--indigo);border-color:var(--indigo);color:var(--indigo-ink)}
+
+/* tag (sticky totals) */
+.tag{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);color:var(--card);border-radius:10px;padding:12px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:600px){.tag{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tag span{display:flex;flex-direction:column;min-width:0}
+.tag .label{color:var(--card);opacity:.7}
+.tag .v{font:600 1.3rem var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag .d{font:500 .74rem var(--f-mono);opacity:.8}
+.tag .dots{display:flex;flex-direction:row;gap:6px;margin-top:6px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--card)}
+.dots i.on{background:var(--card)}
+
+/* supplier labels */
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.opts{grid-template-columns:1fr}}
+.sup{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:6px;padding:16px 14px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sup::before{content:"";position:absolute;top:6px;left:12px;right:12px;border-top:1.5px dashed var(--line)}
+.sup.picked{border-color:var(--indigo);box-shadow:0 0 0 2px var(--indigo)}
+.sup .place{font-size:.88rem;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-block:8px}
+.facts div{display:flex;flex-direction:column;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:var(--f-mono)}
+.facts b{font:600 1rem var(--f-mono);color:var(--ink);text-transform:none;letter-spacing:0}
+.claim{font-size:.9rem;font-style:italic}
+.finding{font-size:.9rem;border-radius:6px;padding:8px 10px}
+.finding.bad{background:var(--thread-soft);color:var(--ink);border-left:4px solid var(--thread)}
+.finding.minor{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn)}
+.finding.clean{background:var(--good-soft);color:var(--ink);border-left:4px solid var(--good)}
+.sup .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.audit,.choose{font:700 .92rem var(--f-body);padding:8px 12px;border-radius:7px;cursor:pointer;border:2px solid var(--ink);background:var(--card);color:var(--ink)}
+.choose{background:var(--indigo);border-color:var(--indigo);color:var(--indigo-ink)}
+.audit:disabled{opacity:.45;cursor:not-allowed}
+.stagehead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:end}
+.why{background:var(--indigo-soft);border-radius:8px;padding:10px 12px;font-size:.94rem}
+
+/* newspaper */
+.news{background:var(--paper);color:var(--paper-ink);border:1px solid var(--line);border-radius:4px;padding:22px;display:flex;flex-direction:column;gap:14px;font-family:Georgia,"Times New Roman",serif}
+.news .mast{text-align:center;border-bottom:3px double var(--paper-ink);padding-bottom:8px}
+.news .mast h2{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.8rem,6vw,2.6rem);font-weight:700;letter-spacing:.02em}
+.news .mast p{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+.story{display:flex;flex-direction:column;gap:4px;border-bottom:1px solid color-mix(in srgb,var(--paper-ink) 25%,transparent);padding-bottom:12px}
+.story:last-child{border-bottom:0;padding-bottom:0}
+.story h3{font-family:Georgia,"Times New Roman",serif;font-size:1.35rem;font-weight:700;line-height:1.15}
+.story p{font-size:1rem;line-height:1.5}
+.story .kick{font:600 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase}
+.story.bad .kick{color:var(--thread)} .story.good .kick{color:var(--good)} .story.minor .kick{color:var(--warn)}
+
+/* care label + report */
+.report{border:3px solid var(--ink);border-radius:10px;background:var(--card);padding:20px;display:flex;flex-direction:column;gap:14px}
+.rhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center}
+.stamp{font:800 1.05rem var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border:3px solid;border-radius:6px;transform:rotate(-3deg)}
+.stamp.good{color:var(--good)} .stamp.bad{color:var(--thread)} .stamp.minor{color:var(--warn)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:min(340px,100%)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+thead th{font:600 .72rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.pill{display:inline-block;font:600 .74rem var(--f-mono);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.bad{background:var(--thread-soft);color:var(--thread)} .pill.minor{background:var(--warn-soft);color:var(--warn)} .pill.good{background:var(--good-soft);color:var(--good)} .pill.na{background:var(--indigo-soft);color:var(--indigo)}
+.totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:600px){.totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.totals div{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column}
+.totals b{font:600 1.25rem var(--f-mono);font-variant-numeric:tabular-nums}
+.disc{background:var(--indigo-soft);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.disc ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="brandbar"><img id="logo" src="logo.png" alt="Southern Utah University" onerror="this.remove()"><span>Supply Chain Management</span></div>
+  <header class="card">
+    <div class="hero">
+      <div class="text">
+        <div class="label">Sustainable supply chain game</div>
+        <h1>Trace My T-Shirt</h1>
+        <p>You are the new sourcing manager at <b>Threadline</b>, a clothing brand launching a basic cotton T-shirt. You'll make <b>100,000 shirts</b> and sell them to stores for <b>$12 each</b>. Your job is to pick a supplier for each step, from the cotton field to the store shelf.</p>
+        <p class="muted">Every supplier tells you its price, carbon, and water use. What it <i>doesn't</i> tell you is the problem it might be hiding.</p>
+      </div>
+      <div class="shirt" aria-hidden="true">
+        <svg viewBox="0 0 240 220"><path d="M78 20 L40 38 L8 78 L40 102 L56 86 L56 206 L184 206 L184 86 L200 102 L232 78 L200 38 L162 20 C152 40 136 48 120 48 C104 48 88 40 78 20Z" fill="var(--indigo-soft)" stroke="var(--indigo)" stroke-width="3" stroke-linejoin="round"/><path d="M78 20 C88 40 104 48 120 48 C136 48 152 40 162 20" fill="none" stroke="var(--indigo)" stroke-width="3"/><rect x="104" y="58" width="32" height="22" rx="2" fill="var(--card)" stroke="var(--indigo)" stroke-width="2"/><line x1="110" y1="66" x2="130" y2="66" stroke="var(--indigo)" stroke-width="2"/><line x1="110" y1="72" x2="124" y2="72" stroke="var(--indigo)" stroke-width="2"/><path d="M60 140 Q90 128 120 140 T180 140" fill="none" stroke="var(--thread)" stroke-width="2.5" stroke-dasharray="6 5"/></svg>
+      </div>
+    </div>
+    <div class="rules">
+      <div class="rule"><b>5 steps</b>Cotton farm, spinning mill, dye house, sewing factory, and shipping. Choose one supplier for each.</div>
+      <div class="rule"><b>3 audits</b>An audit costs $5,000 and shows you what a supplier is really like. You can't check everyone, so choose wisely.</div>
+      <div class="rule"><b>1 news report</b>After launch, reporters investigate your supply chain. Anything hidden will come out.</div>
+    </div>
+    <div><button class="btn go" type="button" id="start">Start sourcing</button></div>
+  </header>
+
+  <section id="game" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="route" id="route"></div>
+      <div class="tag" aria-live="polite">
+        <span><span class="label">Cost per shirt</span><span class="v" id="t-cost"></span><span class="d">incl. $2.00 knitting &amp; cutting</span></span>
+        <span><span class="label">Carbon per shirt</span><span class="v" id="t-co2"></span><span class="d">kg CO₂e</span></span>
+        <span><span class="label">Water per shirt</span><span class="v" id="t-water"></span><span class="d">liters</span></span>
+        <span><span class="label">Audits left</span><span class="dots" id="t-audits"></span><span class="d" id="t-audit-spent"></span></span>
+      </div>
+      <div class="card" id="stage"></div>
+    </div>
+  </section>
+
+  <section id="end" hidden style="display:flex;flex-direction:column;gap:20px">
+    <article class="news" id="news"></article>
+
+    <section class="report">
+      <div class="rhead">
+        <div><div class="label">Sourcing report card</div><h2>Your T-shirt's supply chain</h2></div>
+        <span class="stamp" id="stamp"></span>
+      </div>
+      <p class="muted">Type your name, then take a screenshot of this whole box to submit.</p>
+      <div class="field"><label class="label" for="student">Your name</label><input id="student" type="text" placeholder="First and last name" autocomplete="name"></div>
+      <div class="totals" id="totals"></div>
+      <div class="tablewrap"><table><thead><tr><th>Step</th><th>Your supplier</th><th>Audited?</th><th>What was really there</th></tr></thead><tbody id="chain"></tbody></table></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" type="button" id="again">Play again with a different strategy</button></div>
+    </section>
+
+    <section class="disc">
+      <div class="label">For the discussion board</div>
+      <h3>Think about these before you post</h3>
+      <ol>
+        <li>Which suppliers did you audit, and why those? Did an audit change your choice?</li>
+        <li>Did the news report surprise you? What was hidden in your supply chain, or what did you avoid?</li>
+        <li>Was your cleanest, lowest-carbon chain also your most profitable one? Why or why not?</li>
+        <li>Real brands can't audit every farm and factory either. Who should pay for checking: the brand, the supplier, or the customer?</li>
+      </ol>
+    </section>
+  </section>
+</div>
+
+<script>
+(function(){
+const SHIRTS=100000, PRICE=12, FIXED=2.00, FIXED_CO2=1.0, FIXED_WATER=20, AUDIT=5000, MAX_AUDITS=3, ECO_PREMIUM=1.00;
+const STAGES=[
+ {id:'farm',name:'Cotton farm',intro:'Cotton is grown and picked. This step uses the most water in the whole life of a T-shirt.',why:'Tip: farms are far from your view, and many brands never visit them.',opts:[
+  {id:'f1',name:'Valley Rain-Fed Farms',place:'Group of family farms',claim:'"Conventional cotton, grown with rain instead of irrigation."',cost:1.60,co2:1.8,water:1800,h:{t:'clean',find:'Fair pay, no child labor, and records match what they claimed. A solid partner.'}},
+  {id:'f2',name:'Steppe Cotton Collective',place:'Large state-linked farms',claim:'"Lowest price on the market. Huge volume available."',cost:1.20,co2:2.0,water:2700,h:{t:'bad',find:'Workers are forced to pick cotton under government pressure. The region is under a U.S. forced-labor import ban.',kick:'Customs',head:'Threadline shirts seized at the border over forced-labor cotton',body:'Customs officers detained 40% of Threadline’s shipment after tracing its cotton to farms that use forced labor. The detained shirts cannot be sold.',pen:.40}},
+  {id:'f3',name:'Greenfield Organic Co-op',place:'Certified organic cooperative',claim:'"Certified organic: no synthetic pesticides, rain-fed."',cost:2.30,co2:1.0,water:900,h:{t:'clean',find:'Organic certificate is genuine and up to date. Farmers are paid a fair premium.'}}
+ ]},
+ {id:'spin',name:'Spinning mill',intro:'Raw cotton is cleaned and spun into yarn. Mills use a lot of electricity.',why:'Tip: labels like "eco" or "recycled" are only as good as the proof behind them.',opts:[
+  {id:'s1',name:'EcoSpin Yarns',place:'Mid-size mill',claim:'"Our yarn contains 30% recycled cotton. Certified eco."',cost:0.70,co2:0.9,water:45,h:{t:'bad',find:'The "recycled" certificate is fake. The yarn is 100% new cotton.',kick:'Greenwashing',head:'Threadline’s "recycled" yarn turns out to be fake',body:'An investigation found the mill’s recycled-fiber certificate was forged. Shoppers accused Threadline of greenwashing, and 10% of stores pulled the shirt.',pen:.10}},
+  {id:'s2',name:'Coalbrook Spinning',place:'Large mill on a coal-powered grid',claim:'"Fast, cheap, reliable."',cost:0.50,co2:1.5,water:50,h:{t:'clean',find:'Workers are treated fairly and the mill is honest. Its high carbon comes from coal electricity, exactly as stated.'}},
+  {id:'s3',name:'Sunline Mill',place:'Mill powered by rooftop solar',claim:'"Most of our power comes from our own solar panels."',cost:0.85,co2:0.5,water:40,h:{t:'clean',find:'Solar power confirmed by meter readings. Good working conditions.'}}
+ ]},
+ {id:'dye',name:'Dye house',intro:'The fabric is dyed. Dyeing can pollute rivers if wastewater isn’t treated.',why:'Tip: the cheapest dye houses often save money by skipping wastewater treatment.',opts:[
+  {id:'d1',name:'ClearFlow Dyeing',place:'Dye house with treatment plant',claim:'"All our wastewater is cleaned before it leaves the site."',cost:0.85,co2:1.0,water:60,h:{t:'clean',find:'Treatment plant runs every day; river tests are clean.'}},
+  {id:'d2',name:'DryDye Tech',place:'Waterless dyeing technology',claim:'"New process uses almost no water."',cost:1.20,co2:0.7,water:10,h:{t:'clean',find:'Technology works as promised. Very little water and no discharge.'}},
+  {id:'d3',name:'Rapid Color Works',place:'Low-cost dye house by a river',claim:'"Any color, lowest price, quick turnaround."',cost:0.60,co2:1.2,water:80,h:{t:'bad',find:'Untreated dye water is pumped straight into the river at night.',kick:'Environment',head:'River turns blue near factory dyeing Threadline shirts',body:'Photos of a river stained with dye went viral, and local families say their water is unsafe. Retailers dropped Threadline, cutting sales by 20%.',pen:.20}}
+ ]},
+ {id:'sew',name:'Sewing factory',intro:'Fabric is cut and sewn into shirts. This step uses the most workers.',why:'Tip: a good audit can find problems early enough to fix them.',opts:[
+  {id:'w1',name:'StitchRight Garments',place:'Mid-size factory',claim:'"We passed a social audit last year."',cost:1.50,co2:0.4,water:5,h:{t:'minor',find:'Workers often do 70-hour weeks. The factory agrees to fix schedules if you choose it, adding $0.05 per shirt.',kick:'Labor',head:'Report: workers at Threadline supplier pushed into 70-hour weeks',body:'A labor group documented excessive overtime at the sewing factory. The story was small, but 5% of sales were lost.',pen:.05,fix:.05}},
+  {id:'w2',name:'FairThread Factory',place:'Fair Trade Certified factory',claim:'"Fair Trade Certified: fair wages, safe buildings, worker committees."',cost:2.10,co2:0.3,water:5,h:{t:'clean',find:'Certification confirmed. Workers earn above minimum wage; safety checks are up to date.'}},
+  {id:'w3',name:'QuickSew Ltd.',place:'Large low-cost factory',claim:'"Our prices beat everyone."',cost:1.10,co2:0.5,water:5,h:{t:'bad',find:'Fire exits are locked during shifts and overtime is unpaid.',kick:'Safety',head:'Locked fire exits found at factory making Threadline shirts',body:'Inspectors found workers locked inside during shifts, the same danger behind deadly factory disasters. Stores pulled the shirt, cutting sales by 25%.',pen:.25}}
+ ]},
+ {id:'ship',name:'Shipping to stores',intro:'Finished shirts travel to stores in the U.S. Your launch is 10 weeks away, so any option arrives on time.',why:'Tip: every option arrives before launch. The difference is cost and carbon.',noAudit:true,opts:[
+  {id:'p1',name:'Air freight',place:'Arrives in 3 days',claim:'"Fastest option available."',cost:1.00,co2:6.0,water:0,h:{t:'clean'}},
+  {id:'p2',name:'Standard ocean freight',place:'Arrives in 30 days',claim:'"Low cost, big container ships."',cost:0.25,co2:0.6,water:0,h:{t:'clean'}},
+  {id:'p3',name:'Low-carbon ocean freight',place:'Arrives in 32 days; cleaner fuel',claim:'"Ships run on biofuel and sail slower to save fuel."',cost:0.35,co2:0.25,water:0,h:{t:'clean'}}
+ ]}
+];
+const state={i:0,picks:{},audited:new Set(),audits:0};
+const $=id=>document.getElementById(id);
+const money=(n,d=2)=>(n<0?'−$':'$')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const opt=(sid,oid)=>STAGES.find(s=>s.id===sid).opts.find(o=>o.id===oid);
+
+function totals(){
+  let cost=FIXED,co2=FIXED_CO2,water=FIXED_WATER;
+  STAGES.forEach(s=>{const id=state.picks[s.id];if(!id)return;const o=opt(s.id,id);
+    cost+=o.cost;co2+=o.co2;water+=o.water;
+    if(o.h.t==='minor'&&state.audited.has(o.id))cost+=o.h.fix;});
+  return {cost,co2,water};
+}
+function renderTag(){
+  const t=totals();
+  $('t-cost').textContent=money(t.cost);
+  $('t-co2').textContent=t.co2.toFixed(2);
+  $('t-water').textContent=Math.round(t.water).toLocaleString();
+  $('t-audits').innerHTML=Array.from({length:MAX_AUDITS},(_,k)=>`<i class="${k<MAX_AUDITS-state.audits?'on':''}"></i>`).join('');
+  $('t-audit-spent').textContent=money(state.audits*AUDIT,0)+' spent';
+  $('route').innerHTML=STAGES.map((s,k)=>`<span class="${k<state.i?'done':k===state.i?'now':''}">${k+1}. ${s.name}</span>`).join('');
+}
+function findingHTML(o){
+  const h=o.h;if(!h.find)return '';
+  const cls=h.t==='bad'?'bad':h.t==='minor'?'minor':'clean';
+  const lead=h.t==='bad'?'Problem found:':h.t==='minor'?'Issue found:':'All clear:';
+  return `<div class="finding ${cls}"><b>${lead}</b> ${h.find}</div>`;
+}
+function renderStage(){
+  const s=STAGES[state.i];
+  const box=$('stage');
+  box.innerHTML=`<div class="stagehead"><div><div class="label">Step ${state.i+1} of ${STAGES.length}</div><h2>${s.name}</h2></div></div>
+    <p>${s.intro}</p><p class="why">${s.why}</p>
+    <div class="opts">${s.opts.map(o=>`
+      <div class="sup" id="sup-${o.id}">
+        <div><h3>${o.name}</h3><p class="place">${o.place}</p></div>
+        <div class="facts"><div>Cost<b>${money(o.cost)}</b></div><div>CO₂ kg<b>${o.co2.toFixed(2)}</b></div><div>Water L<b>${o.water.toLocaleString()}</b></div></div>
+        <p class="claim">${o.claim}</p>
+        ${state.audited.has(o.id)?findingHTML(o):''}
+        <div class="acts">
+          ${s.noAudit?'':`<button type="button" class="audit" data-a="${o.id}" ${state.audited.has(o.id)||state.audits>=MAX_AUDITS?'disabled':''}>${state.audited.has(o.id)?'Audited':'Audit ($5,000)'}</button>`}
+          <button type="button" class="choose" data-c="${o.id}">Choose</button>
+        </div>
+      </div>`).join('')}</div>`;
+  box.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>{
+    if(state.audits>=MAX_AUDITS)return;state.audits++;state.audited.add(b.dataset.a);renderTag();renderStage();
+    document.getElementById('sup-'+b.dataset.a).scrollIntoView({block:'nearest'});}));
+  box.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',()=>{
+    state.picks[s.id]=b.dataset.c;state.i++;renderTag();
+    if(state.i>=STAGES.length)finish();else{renderStage();$('game').scrollIntoView({behavior:'smooth',block:'start'});}
+  }));
+}
+function outcome(){
+  const t=totals();let share=1;const problems=[];
+  STAGES.forEach(s=>{const o=opt(s.id,state.picks[s.id]);const h=o.h;
+    if(h.t==='bad'){share*=1-h.pen;problems.push({s,o,sev:'bad'});}
+    else if(h.t==='minor'&&!state.audited.has(o.id)){share*=1-h.pen;problems.push({s,o,sev:'minor'});}
+  });
+  const clean=problems.length===0;
+  const eco=clean&&t.co2<=4.0;
+  const price=PRICE+(eco?ECO_PREMIUM:0);
+  const sold=Math.round(SHIRTS*share);
+  const auditCost=state.audits*AUDIT;
+  const profit=sold*price-SHIRTS*t.cost-auditCost;
+  return {...t,problems,clean,eco,price,sold,auditCost,profit};
+}
+function finish(){
+  const r=outcome();
+  $('game').hidden=true;$('end').hidden=false;
+  // newspaper
+  const date=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  let stories=r.problems.map(p=>`<div class="story ${p.sev}"><span class="kick">${p.o.h.kick}</span><h3>${p.o.h.head}</h3><p>${p.o.h.body}</p></div>`).join('');
+  if(r.clean){
+    stories+=`<div class="story good"><span class="kick">Investigation</span><h3>Reporters dig into Threadline’s T-shirt and find nothing to report</h3><p>Journalists traced the shirt from farm to store and found no hidden abuses or pollution. ${r.eco?'With carbon at '+r.co2.toFixed(1)+' kg per shirt, retailers agreed to a $1 “responsibly made” price premium.':'Its carbon footprint of '+r.co2.toFixed(1)+' kg per shirt is ordinary, so no price premium this season.'}</p></div>`;
+  }
+  const unaud=STAGES.filter(s=>!s.noAudit&&!state.audited.has(state.picks[s.id])).length;
+  stories+=`<div class="story ${r.clean?'good':'minor'}"><span class="kick">Business</span><h3>Threadline sells ${r.sold.toLocaleString()} shirts, ${r.profit>=0?'earning':'losing'} ${money(Math.abs(r.profit),0)}</h3><p>The brand checked ${4-unaud} of its 4 key suppliers before launch. ${unaud>0?unaud+' supplier'+(unaud>1?'s were':' was')+' never audited.':'Every key supplier was audited.'}</p></div>`;
+  $('news').innerHTML=`<div class="mast"><p>${date}</p><h2>The Daily Thread</h2><p>Fashion · Business · Planet</p></div>${stories}`;
+  // stamp
+  const st=$('stamp');
+  if(r.problems.some(p=>p.sev==='bad')){st.className='stamp bad';st.textContent='Scandal';}
+  else if(!r.clean){st.className='stamp minor';st.textContent='Close call';}
+  else if(r.eco){st.className='stamp good';st.textContent='Responsible leader';}
+  else {st.className='stamp good';st.textContent='Clean supply chain';}
+  $('totals').innerHTML=`
+    <div><span class="label">Total profit</span><b>${money(r.profit,0)}</b></div>
+    <div><span class="label">Shirts sold</span><b>${r.sold.toLocaleString()}</b></div>
+    <div><span class="label">Carbon / shirt</span><b>${r.co2.toFixed(2)} kg</b></div>
+    <div><span class="label">Water / shirt</span><b>${Math.round(r.water).toLocaleString()} L</b></div>
+    <div><span class="label">Cost / shirt</span><b>${money(r.cost)}</b></div>
+    <div><span class="label">Selling price</span><b>${money(r.price)}</b></div>
+    <div><span class="label">Audits used</span><b>${state.audits} of 3</b></div>
+    <div><span class="label">Problems in news</span><b>${r.problems.length}</b></div>`;
+  $('chain').innerHTML=STAGES.map(s=>{const o=opt(s.id,state.picks[s.id]);const aud=state.audited.has(o.id);
+    let truth;
+    if(s.noAudit)truth='<span class="pill na">No audit needed</span>';
+    else if(o.h.t==='bad')truth='<span class="pill bad">'+o.h.kick+' problem</span>';
+    else if(o.h.t==='minor')truth=aud?'<span class="pill good">Overtime fixed after audit</span>':'<span class="pill minor">Excessive overtime</span>';
+    else truth='<span class="pill good">Clean</span>';
+    return `<tr><td>${s.name}</td><td>${o.name}</td><td>${s.noAudit?'—':aud?'Yes':'No'}</td><td>${truth}</td></tr>`;}).join('');
+  $('end').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function reset(){
+  state.i=0;state.picks={};state.audited=new Set();state.audits=0;
+  $('end').hidden=true;$('game').hidden=false;renderTag();renderStage();
+  $('game').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('start').addEventListener('click',()=>{$('start').hidden=true;reset();});
+$('again').addEventListener('click',reset);
+})();
+</script>
+</body>
+</html>
